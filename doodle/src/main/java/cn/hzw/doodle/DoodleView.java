@@ -1,5 +1,6 @@
 package cn.hzw.doodle;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -8,17 +9,22 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.os.Build;
 import android.os.Looper;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import cn.forward.androids.utils.ImageUtils;
 import cn.forward.androids.utils.Util;
@@ -93,7 +99,7 @@ public class DoodleView extends FrameLayout implements IDoodle {
     private IDoodleTouchDetector mDefaultTouchDetector;
     private Map<IDoodlePen, IDoodleTouchDetector> mTouchDetectorMap = new HashMap<>();
 
-    private DoodleViewInner mInner;
+    private View mInner;
     private RectF mDoodleBound = new RectF();
     private PointF mTempPoint = new PointF();
 
@@ -140,8 +146,8 @@ public class DoodleView extends FrameLayout implements IDoodle {
 
         mDefaultTouchDetector = defaultDetector;
 
-        mInner = new DoodleViewInner(context);
-        addView(mInner);
+        mInner = new InnerDoodleSurfaceView(context);
+        addView(mInner, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
     }
 
     @Override
@@ -587,9 +593,9 @@ public class DoodleView extends FrameLayout implements IDoodle {
     public void setDoodleRotation(int degree) {
         mDoodleRotateDegree = degree;
         mDoodleRotateDegree = mDoodleRotateDegree % 360;
-        mInner.setPivotX(mInner.getWidth() / 2);
-        mInner.setPivotY(mInner.getHeight() / 2);
-        mInner.setRotation(mDoodleRotateDegree);
+//        mInner.setPivotX(mInner.getWidth() / 2);
+//        mInner.setPivotY(mInner.getHeight() / 2);
+//        mInner.setRotation(mDoodleRotateDegree);
 
         // 居中
         RectF rectF = getDoodleBound();
@@ -1008,9 +1014,8 @@ public class DoodleView extends FrameLayout implements IDoodle {
         return mRotateTranY;
     }
 
-    private class DoodleViewInner extends View {
-
-        public DoodleViewInner(Context context) {
+    private class InnerDoodleView extends View {
+        public InnerDoodleView(Context context) {
             super(context);
             // 关闭硬件加速，因为bitmap的Canvas不支持硬件加速
             if (Build.VERSION.SDK_INT >= 11) {
@@ -1032,11 +1037,130 @@ public class DoodleView extends FrameLayout implements IDoodle {
             return super.onTouchEvent(event);
         }
 
+        @SuppressLint("MissingSuperCall")
+        @Override
+        public void draw(Canvas canvas) {
+            super.draw(canvas);
+        }
+
         @Override
         protected void onDraw(Canvas canvas) {
-            canvas.save();
             doDraw(canvas);
-            canvas.restore();
+        }
+    }
+
+    /**
+     * SurfaceView实现
+     * 需要绘制时往阻塞队列添加绘制任务，随后在子线程中会从阻塞队列获取任务进行绘制，阻塞队列为空时，子线程会阻塞等待下一次绘制任务
+     **/
+    private class InnerDoodleSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+
+        private SurfaceHolder mSurfaceHolder;
+        private LinkedBlockingQueue<Runnable> mRunnables = new LinkedBlockingQueue<>();
+        private boolean mIsDrawing;
+        private int mTryDrawTimes = 0; // 重试的次数
+        private Runnable mDrawRunnable;
+        private Thread mThread;
+
+        public InnerDoodleSurfaceView(Context context) {
+            super(context);
+            // 关闭硬件加速，因为bitmap的Canvas不支持硬件加速
+            if (Build.VERSION.SDK_INT >= 11) {
+                setLayerType(LAYER_TYPE_SOFTWARE, null);
+            }
+
+            mSurfaceHolder = getHolder();
+            mSurfaceHolder.addCallback(this);
+            setZOrderMediaOverlay(false);
+
+            mDrawRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    Canvas canvas = null;
+                    try {
+                        canvas = mSurfaceHolder.lockCanvas();
+                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+                        canvas.rotate(mDoodleRotateDegree, mInner.getWidth() / 2, mInner.getHeight() / 2);
+                        doDraw(canvas);
+                    } catch (Exception e) {
+
+                    } finally {
+                        if (canvas != null) {
+                            mSurfaceHolder.unlockCanvasAndPost(canvas);
+                        }
+                    }
+                }
+            };
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            // 綁定的识别器
+            IDoodleTouchDetector detector = mTouchDetectorMap.get(mPen);
+            if (detector != null) {
+                return detector.onTouchEvent(event);
+            }
+            // 默认识别器
+            if (mDefaultTouchDetector != null) {
+                return mDefaultTouchDetector.onTouchEvent(event);
+            }
+            return super.onTouchEvent(event);
+        }
+
+        @SuppressLint("MissingSuperCall")
+        @Override
+        public void draw(Canvas canvas) {
+            mRunnables.add(mDrawRunnable);
+        }
+
+        @Override
+        public void surfaceCreated(SurfaceHolder holder) {
+            mIsDrawing = true;
+            startDraw();
+        }
+
+        private void startDraw() {
+            if (mThread != null && !mThread.isInterrupted()) {
+                try {
+                    mThread.interrupt();
+                } catch (Throwable e) {
+
+                }
+            }
+            mThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    mRunnables.add(mDrawRunnable); // 刷新一遍
+                    while (mIsDrawing) {
+                        try {
+                            Runnable runnable = mRunnables.take(); // 使用阻塞队列
+                            runnable.run();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            if (mTryDrawTimes < 3) {
+                                mTryDrawTimes++;
+                                startDraw();
+                            }
+                        }
+                    }
+                }
+            });
+            mThread.start();
+        }
+
+        @Override
+        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+        }
+
+        @Override
+        public void surfaceDestroyed(SurfaceHolder holder) {
+            mIsDrawing = false;
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            mIsDrawing = false;
         }
     }
 }
