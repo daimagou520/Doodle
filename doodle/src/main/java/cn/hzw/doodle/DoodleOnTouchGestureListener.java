@@ -139,7 +139,6 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
                     mCurrDoodlePath = DoodlePath.toShape(mDoodle,
                             mDoodle.toX(mTouchDownX), mDoodle.toY(mTouchDownY), mDoodle.toX(mTouchX), mDoodle.toY(mTouchY));
                 }
-//                mCurrDoodlePath.setDrawOptimize(false);
                 mDoodle.addItem(mCurrDoodlePath);
             }
         }
@@ -159,8 +158,6 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
             }
         } else {
             if (mCurrDoodlePath != null) {
-                /*mCurrDoodlePath.setDrawOptimize(true);
-                mDoodle.refresh(mCurrDoodlePath);*/
                 mCurrDoodlePath = null;
             }
         }

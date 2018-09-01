@@ -189,13 +189,6 @@ public abstract class DoodleItemBase implements IDoodleItem {
         mIsDrawOptimize = drawOptimize;
     }
 
-    /**
-     * 是否优化绘制，若是则在添加item时提前会绘制到图片上，若否则在每次view绘制时绘制在View中，直到保存时才绘制到图片上
-     */
-    public boolean isDrawOptimize() {
-        return mIsDrawOptimize;
-    }
-
     @Override
     public boolean isNeedClipOutside() {
         return mIsNeedClipOutside;
@@ -248,6 +241,10 @@ public abstract class DoodleItemBase implements IDoodleItem {
 
     }
 
+    /**
+     * 画在所有item的上面
+     * @param canvas
+     */
     protected void drawAtTheTop(Canvas canvas) {
 
     }
