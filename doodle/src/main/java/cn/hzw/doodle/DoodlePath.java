@@ -131,7 +131,9 @@ public class DoodlePath extends DoodleRotatableItemBase {
 
         getPen().config(this, mPaint);
         getColor().config(this, mPaint);
-        getShape().draw(canvas, this, mPaint);
+        getShape().config(this, mPaint);
+
+        canvas.drawPath(getPath(), mPaint);
     }
 
     private RectF mBound = new RectF();
@@ -148,6 +150,13 @@ public class DoodlePath extends DoodleRotatableItemBase {
         }
     }
 
+    @Override
+    public boolean isDoodleEditable() {
+        if (getPen() == DoodlePen.ERASER) {
+            return false;
+        }
+        return super.isDoodleEditable();
+    }
 
     //---------计算Path
     private Path mArrowTrianglePath;

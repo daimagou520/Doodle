@@ -400,7 +400,12 @@ public class DoodleView extends View implements IDoodle {
 
         canvas.restore();
 
-        mPen.drawHelpers(canvas, this);
+        if (mPen != null) {
+            mPen.drawHelpers(canvas, this);
+        }
+        if (mShape != null) {
+            mShape.drawHelpers(canvas, this);
+        }
     }
 
     public float getAllScale() {
@@ -944,7 +949,7 @@ public class DoodleView extends View implements IDoodle {
         return mRotateTranY;
     }
 
-    private class DoodleViewInner{
+    private class DoodleViewInner {
         public boolean onTouchEvent(MotionEvent event) {
             // 綁定的识别器
             IDoodleTouchDetector detector = mTouchDetectorMap.get(mPen);

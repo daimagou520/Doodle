@@ -216,6 +216,11 @@ public abstract class DoodleItemBase implements IDoodleItem {
         }
     }
 
+    @Override
+    public boolean isDoodleEditable() {
+        return false;
+    }
+
     /**
      * 仅画在View上，在绘制涂鸦图片之前调用(相当于背景图，但是保存图片时不包含该部分)
      *

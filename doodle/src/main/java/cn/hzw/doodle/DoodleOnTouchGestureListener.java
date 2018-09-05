@@ -53,6 +53,8 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
     private IDoodleSelectableItem mSelectedItem; // 当前选中的item
     private ISelectionListener mSelectionListener;
 
+    private boolean mIsEditMode = false; //是否是编辑模式，可移动缩放涂鸦
+
     public DoodleOnTouchGestureListener(DoodleView doodle, ISelectionListener listener) {
         mDoodle = doodle;
         mCopyLocation = DoodlePen.COPY.getCopyLocation();
@@ -84,6 +86,14 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
         return mSelectedItem;
     }
 
+    public boolean isEditMode() {
+        return mIsEditMode;
+    }
+
+    public void setEditMode(boolean editMode) {
+        mIsEditMode = editMode;
+    }
+
     @Override
     public boolean onDown(MotionEvent e) {
         mTouchX = mTouchDownX = e.getX();
@@ -102,8 +112,7 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
         mLastTouchX = mTouchX = event.getX();
         mLastTouchY = mTouchY = event.getY();
 
-        if (mDoodle.getPen().isSelectable()) {
-            // 判断是否点中选择区域
+        if (mIsEditMode) {
             if (mSelectedItem != null) {
                 PointF xy = mSelectedItem.getLocation();
                 mSelectedItemX = xy.x;
@@ -152,7 +161,7 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
         mTouchX = e.getX();
         mTouchY = e.getY();
 
-        if (mDoodle.getPen().isSelectable()) {
+        if (mIsEditMode) {
             if (mSelectedItem instanceof DoodleRotatableItemBase) {
                 ((DoodleRotatableItemBase) mSelectedItem).setIsRotating(false);
             }
@@ -172,7 +181,7 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
         mTouchX = e2.getX();
         mTouchY = e2.getY();
 
-        if (mDoodle.getPen().isSelectable()) { //画笔是否是可选择的
+        if (mIsEditMode) { //画笔是否是可选择的
             if (mSelectedItem != null) {
                 if ((mSelectedItem instanceof DoodleRotatableItemBase) && (((DoodleRotatableItemBase) mSelectedItem).isRotating())) { // 旋转item
                     PointF xy = mSelectedItem.getLocation();
@@ -218,13 +227,13 @@ public class DoodleOnTouchGestureListener extends TouchGestureDetector.OnTouchGe
         mTouchX = e.getX();
         mTouchY = e.getY();
 
-        if (mDoodle.getPen().isSelectable()) {
+        if (mIsEditMode) {
             boolean found = false;
             IDoodleSelectableItem item;
             List<IDoodleItem> items = mDoodle.getAllItem();
             for (int i = items.size() - 1; i >= 0; i--) {
                 IDoodleItem elem = items.get(i);
-                if (!(elem instanceof IDoodleSelectableItem)|| !elem.getPen().isSelectable()) {
+                if (!(elem instanceof IDoodleSelectableItem)|| !elem.isDoodleEditable()) {
                     continue;
                 }
                 item = (IDoodleSelectableItem) elem;
