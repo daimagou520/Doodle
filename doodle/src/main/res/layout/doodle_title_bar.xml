@@ -14,7 +14,7 @@
 
         <cn.forward.androids.views.MaskImageView
             android:id="@+id/doodle_btn_back"
-            android:layout_width="@dimen/doodle_title_bar_height"
+            android:layout_width="40dp"
             android:layout_height="match_parent"
             android:scaleType="centerInside"
             android:src="@drawable/doodle_btn_back"
@@ -44,7 +44,14 @@
             android:textColor="#ffffff"
             android:textSize="18dp"/>
 
-
+        <cn.forward.androids.views.MaskImageView
+            android:id="@+id/btn_undo"
+            android:layout_width="@dimen/doodle_title_bar_height"
+            android:layout_height="@dimen/doodle_title_bar_height"
+            app:miv_is_ignore_alpha="true"
+            app:miv_mask_color="#a8a8a8"
+            android:scaleType="centerInside"
+            android:src="@drawable/doodle_ic_undo_white" />
         <cn.forward.androids.views.MaskImageView
             android:id="@+id/doodle_btn_rotate"
             android:layout_width="@dimen/doodle_title_bar_height"
