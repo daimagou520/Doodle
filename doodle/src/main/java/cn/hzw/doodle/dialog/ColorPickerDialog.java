@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
@@ -40,7 +41,7 @@ public class ColorPickerDialog extends Dialog {
     }
 
 
-    public void show(IDoodle iDoodle, int maxSize) {
+    public void show(IDoodle iDoodle, Drawable drawable, int maxSize) {
         super.show();
         int height = Util.dp2px(context, 220);
         int width = Util.dp2px(context, 180);
@@ -70,11 +71,11 @@ public class ColorPickerDialog extends Dialog {
         seekBar.setProgress((int) iDoodle.getSize());
 
         ViewGroup container = (ViewGroup) viewGroup.findViewById(R.id.doodle_color_selector_container);
-        DoodleColor doodleColor = (DoodleColor) iDoodle.getColor();
-        int color = doodleColor.getType() == DoodleColor.Type.COLOR ? doodleColor.getColor() : Color.BLACK;
-        final ColorPickerView colorPickerView = new ColorPickerView(context, color, height, width, null);
-        if (doodleColor.getType() == DoodleColor.Type.BITMAP) {
-            colorPickerView.setDrawable(new BitmapDrawable(doodleColor.getBitmap()));
+        final ColorPickerView colorPickerView = new ColorPickerView(context, Color.BLACK, height, width, null);
+        if (drawable instanceof BitmapDrawable) {
+            colorPickerView.setDrawable((BitmapDrawable) drawable);
+        } else if (drawable instanceof ColorDrawable) {
+            colorPickerView.setColor(((ColorDrawable) drawable).getColor());
         }
         container.addView(colorPickerView, 0, new ViewGroup.LayoutParams(height, width));
 

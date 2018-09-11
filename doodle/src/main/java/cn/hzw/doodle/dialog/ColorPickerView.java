@@ -320,6 +320,11 @@ public class ColorPickerView extends View {
         return s + Math.round(p * (d - s));
     }
 
+    public void setColor(int color) {
+        mCenterPaint.setColor(color);
+        mRectColors[1] = mCenterPaint.getColor();
+    }
+
     public int getColor() {
         return mCenterPaint.getColor();
     }

@@ -83,6 +83,7 @@ public class DoodleView extends View implements IDoodle {
     private float mZoomerScale = 0; // 放大镜的倍数
     private Paint mZooomerPaint;
     private int mZoomerHorizonX; // 放大器的位置的x坐标，使其水平居中
+    private boolean mIsScrollingDoodle = false; // 是否正在滑动，只要用于标志触摸时才显示放大镜
 
     private float mDoodleSizeUnit = 1; // 长度单位，不同大小的图片的长度单位不一样。该单位的意义同dp的作用类似，独立于图片之外的单位长度
     private int mDoodleRotateDegree = 0; // 相对于初始图片旋转的角度
@@ -303,7 +304,7 @@ public class DoodleView extends View implements IDoodle {
         mPaint.setStrokeWidth(20);
         canvas.drawRect(getDoodleBound(), mPaint);*/
 
-        if (mEnableZoomer && mZoomerScale > 0) { //启用放大镜
+        if (mIsScrollingDoodle && mEnableZoomer && mZoomerScale > 0) { //启用放大镜
             canvas.save();
 
             if (mTouchY <= mZoomerRadius * 2) { // 在放大镜的范围内， 把放大镜仿制底部
@@ -614,7 +615,10 @@ public class DoodleView extends View implements IDoodle {
      */
     @Override
     public void clear() {
-        int size = mItemStack.size();
+        for (int i = 0; i < mItemStack.size(); i++) {
+            IDoodleItem item = mItemStack.remove(i);
+            item.onRemove();
+        }
         mItemStack.clear();
         refresh();
     }
@@ -835,6 +839,18 @@ public class DoodleView extends View implements IDoodle {
      */
     public boolean isEnableZoomer() {
         return mEnableZoomer;
+    }
+
+    /**
+     * 是否正在滚动涂鸦，只要用于标志触摸时才显示放大镜
+     * @return
+     */
+    public boolean isScrollingDoodle() {
+        return mIsScrollingDoodle;
+    }
+
+    public void setScrollingDoodle(boolean scrollingDoodle) {
+        mIsScrollingDoodle = scrollingDoodle;
     }
 
     @Override
